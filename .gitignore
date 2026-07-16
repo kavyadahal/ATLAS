@@ -1,21 +1,34 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 
 # Virtual Environment
 .venv/
+venv/
+env/
 
 # VS Code
 .vscode/
 
-# ChromaDB
-memory/chroma_db/
-
-# Logs
-logs/
-
-# Environment Variables
+# Environment variables
 .env
 
-# macOS
+# OS files
 .DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# ChromaDB database (generated at runtime)
+data/chroma_db/
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+voice/*.onnx
