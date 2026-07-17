@@ -1,64 +1,48 @@
-import json
-import queue
 import time
 
 import sounddevice as sd
-import vosk
 
-from config import VOSK_MODEL_PATH
-
-vosk.SetLogLevel(-1)
+from openwakeword.model import Model
 
 
 class WakeWord:
     """
-    Continuously listens for the wake word 'hey atlas'.
+    Continuously listens for the wake word.
 
-    When the wake word is detected, it returns True.
+    Returns True when the wake word is detected.
     """
 
     def __init__(self):
-        self.model = vosk.Model(VOSK_MODEL_PATH)
+
         self.sample_rate = 16000
 
-    def wait(self) -> bool:
+        # Uses the default OpenWakeWord model.
+        # We'll replace this with a custom "Hey ATLAS"
+        # model later.
+        self.model = Model()
 
-        audio_queue = queue.Queue()
+    def wait(self):
 
-        def callback(indata, frames, time, status):
-            audio_queue.put(bytes(indata))
+        print("Waiting for wake word...")
 
-        recognizer = vosk.KaldiRecognizer(
-            self.model,
-            self.sample_rate
-        )
-
-        with sd.RawInputStream(
+        with sd.InputStream(
             samplerate=self.sample_rate,
-            blocksize=8000,
-            dtype="int16",
             channels=1,
-            callback=callback
-        ):
-
-            print("Waiting for wake word...")
+            dtype="float32",
+        ) as stream:
 
             while True:
 
-                data = audio_queue.get()
+                audio, overflowed = stream.read(1280)
 
-                if recognizer.AcceptWaveform(data):
+                prediction = self.model.predict(audio)
 
-                    result = json.loads(
-                        recognizer.Result()
-                    )
+                for score in prediction.values():
 
-                    text = result.get("text", "").lower()
+                    if score > 0.5:
 
-                    if text:
-                        print(f"Heard: {text}")
-
-                    if "hey atlas" in text:
                         print("Wake word detected.\n")
+
                         time.sleep(0.3)
+
                         return True

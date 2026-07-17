@@ -1,0 +1,8 @@
+chromadb
+numpy
+ollama
+onnxruntime
+openwakeword
+piper-tts
+sounddevice
+vosk
