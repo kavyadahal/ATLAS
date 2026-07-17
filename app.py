@@ -1,5 +1,6 @@
 from brain.ollama_chat import AtlasBrain
 from voice.listener import Listener
+from voice.stt import SpeechToText
 from voice.speaker import Speaker
 from voice.wake_word import WakeWord
 
@@ -9,6 +10,7 @@ def main():
     atlas = AtlasBrain()
     speaker = Speaker()
     listener = Listener()
+    stt = SpeechToText()
     wake = WakeWord()
 
     conversation_mode = False
@@ -18,38 +20,46 @@ def main():
     print("=" * 50)
     print("Say 'Hey Jarvis' to wake ATLAS.\n")
 
-    while True:
+    try:
+        while True:
 
-        # Wait for wake word if ATLAS is sleeping
-        if not conversation_mode:
-            wake.wait()
-            conversation_mode = True
-            print("Listening...\n")
+            if not conversation_mode:
+                wake.wait()
+                conversation_mode = True
 
-        # Listen for the user's command
-        user = listener.listen(timeout=5)
+                print("ATLAS : Yes, Sir.\n")
+                speaker.speak("Yes, Sir.")
+                print("Listening...\n")
 
-        # If the user stays silent, go back to sleep
-        if not user:
-            print("\nConversation ended.")
-            print("Waiting for wake word...\n")
-            conversation_mode = False
-            continue
+            audio_file = listener.listen(timeout=10)
 
-        print(f"You : {user}")
+            if audio_file is None:
+                print("\nConversation ended.")
+                print("Waiting for wake word...\n")
+                conversation_mode = False
+                continue
 
-        # Exit command
-        if user.lower() == "exit":
-            print("Goodbye, Sir.")
-            break
+            user = stt.transcribe(audio_file)
 
-        # Generate AI response
-        reply = atlas.chat(user)
+            if not user:
+                print("\n(couldn't understand that)")
+                continue
 
-        print(f"\nATLAS : {reply}")
+            print(f"You : {user}")
 
-        # Speak response
-        speaker.speak(reply)
+            if user.lower() in ["exit", "quit", "stop"]:
+                print("Goodbye, Sir.")
+                speaker.speak("Goodbye, Sir.")
+                break
+
+            reply = atlas.chat(user)
+            print(f"\nATLAS : {reply}\n")
+            speaker.speak(reply)
+
+    finally:
+        # Release the microphone device cleanly on shutdown, whether we
+        # exited normally, via Ctrl+C, or from an unhandled exception.
+        wake.close()
 
 
 if __name__ == "__main__":

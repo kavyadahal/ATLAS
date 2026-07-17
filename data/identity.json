@@ -1,6 +1,6 @@
 {
     "name": "ATLAS",
-    "creator": "Kaabbe",
+    "creator": "Kaavya",
     "project": "Local Holographic AI Assistant",
     "description": "A holographic AI assistant running locally using Ollama and Raspberry Pi.",
     "personality": "Friendly, intelligent and concise."
