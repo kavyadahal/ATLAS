@@ -1,48 +1,53 @@
-import time
-
-import sounddevice as sd
-
+import numpy as np
 from openwakeword.model import Model
+from pvrecorder import PvRecorder
 
 
 class WakeWord:
     """
-    Continuously listens for the wake word.
-
-    Returns True when the wake word is detected.
+    Listens continuously for the wake word using OpenWakeWord.
+    Returns only after the wake word has been detected.
     """
 
     def __init__(self):
 
-        self.sample_rate = 16000
+        self.model = Model(
+            wakeword_models=["hey_jarvis"],
+            inference_framework="onnx"
+        )
 
-        # Uses the default OpenWakeWord model.
-        # We'll replace this with a custom "Hey ATLAS"
-        # model later.
-        self.model = Model()
+        self.recorder = PvRecorder(
+            device_index=-1,
+            frame_length=1280
+        )
 
     def wait(self):
 
         print("Waiting for wake word...")
 
-        with sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=1,
-            dtype="float32",
-        ) as stream:
+        self.recorder.start()
+
+        try:
 
             while True:
 
-                audio, overflowed = stream.read(1280)
+                pcm = self.recorder.read()
+
+                audio = np.array(
+                    pcm,
+                    dtype=np.int16
+                )
 
                 prediction = self.model.predict(audio)
 
-                for score in prediction.values():
+                score = prediction.get("hey_jarvis", 0)
 
-                    if score > 0.5:
+                if score > 0.5:
 
-                        print("Wake word detected.\n")
+                    print("\nWake word detected!\n")
 
-                        time.sleep(0.3)
+                    break
 
-                        return True
+        finally:
+
+            self.recorder.stop()

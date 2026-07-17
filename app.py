@@ -16,30 +16,39 @@ def main():
     print("=" * 50)
     print("ATLAS")
     print("=" * 50)
+    print("Say 'Hey Jarvis' to wake ATLAS.\n")
 
     while True:
 
+        # Wait for wake word if ATLAS is sleeping
         if not conversation_mode:
             wake.wait()
             conversation_mode = True
+            print("Listening...\n")
 
-        user = listener.listen(timeout=10)
+        # Listen for the user's command
+        user = listener.listen(timeout=5)
 
+        # If the user stays silent, go back to sleep
         if not user:
             print("\nConversation ended.")
             print("Waiting for wake word...\n")
             conversation_mode = False
             continue
 
-        print(f"\nYou : {user}")
+        print(f"You : {user}")
 
+        # Exit command
         if user.lower() == "exit":
+            print("Goodbye, Sir.")
             break
 
+        # Generate AI response
         reply = atlas.chat(user)
 
         print(f"\nATLAS : {reply}")
 
+        # Speak response
         speaker.speak(reply)
 
 
