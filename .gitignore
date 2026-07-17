@@ -32,3 +32,6 @@ data/chroma_db/
 .mypy_cache/
 
 voice/*.onnx
+
+# Runtime-generated recordings
+input.wav
