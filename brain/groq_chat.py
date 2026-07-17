@@ -1,6 +1,6 @@
-from ollama import Client
+from groq import Groq
 
-from config import MODEL, HOST
+from config import GROQ_API_KEY, MODEL
 from brain.identify import Identity
 from memory.vector_store import VectorStore
 
@@ -13,7 +13,13 @@ class AtlasBrain:
 
     def __init__(self):
 
-        self.client = Client(host=HOST)
+        if not GROQ_API_KEY:
+            raise RuntimeError(
+                "GROQ_API_KEY is missing. Add it to a .env file in the ATLAS folder "
+                "(see .env.example)."
+            )
+
+        self.client = Groq(api_key=GROQ_API_KEY)
 
         self.identity = Identity()
 
@@ -54,7 +60,7 @@ class AtlasBrain:
         creator_name = self.identity.data["creator"]
 
         if "who are you" in message:
-            return f"I am {assistant_name}, a local holographic AI assistant created by {creator_name}, Sir."
+            return f"I am {assistant_name}, a holographic AI assistant created by {creator_name}, Sir."
 
         if "what is your name" in message:
             return f"My name is {assistant_name}, Sir."
@@ -72,7 +78,7 @@ class AtlasBrain:
             return f"I was created by {creator_name}, Sir."
 
         if "what model powers you" in message:
-            return "I am powered by Qwen 2.5 running locally through Ollama, Sir."
+            return f"I am powered by {MODEL} through Groq, Sir."
 
         # ==========================
         # Retrieve Relevant Memories
@@ -113,15 +119,15 @@ class AtlasBrain:
             request_messages = self.messages
 
         # ==========================
-        # Send to Ollama
+        # Send to Groq
         # ==========================
 
-        response = self.client.chat(
+        response = self.client.chat.completions.create(
             model=MODEL,
             messages=request_messages
         )
 
-        assistant = response["message"]["content"].strip()
+        assistant = response.choices[0].message.content.strip()
 
         # ==========================
         # Keep "Sir" at the end

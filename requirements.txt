@@ -1,8 +1,9 @@
 chromadb
+groq
 numpy
-ollama
 onnxruntime
 openwakeword
 piper-tts
+python-dotenv
 sounddevice
 vosk

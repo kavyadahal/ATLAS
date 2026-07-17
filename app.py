@@ -1,4 +1,4 @@
-from brain.ollama_chat import AtlasBrain
+from brain.groq_chat import AtlasBrain
 from voice.listener import Listener
 from voice.speaker import Speaker
 from voice.wake_word import WakeWord

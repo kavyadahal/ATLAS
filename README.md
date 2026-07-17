@@ -1,6 +1,6 @@
 # ATLAS
 
-ATLAS is a local AI voice assistant built with Python. It uses **Ollama** for AI responses, **Vosk** for speech recognition, and **Piper** for text-to-speech.
+ATLAS is an AI voice assistant built with Python. It uses **Groq** for AI responses, **Vosk** for speech recognition, and **Piper** for text-to-speech.
 
 ## Requirements
 
@@ -8,8 +8,8 @@ Before getting started, make sure you have:
 
 * Python 3.10 or later installed
 * Git installed
-* Ollama installed and running
-* An internet connection (to download required packages and models)
+* A Groq API key from https://console.groq.com/keys
+* An internet connection (to download packages/models and call Groq)
 
 ---
 
@@ -66,19 +66,21 @@ voice/
 
 ---
 
-## Step 4: Install Ollama
+## Step 4: Add your Groq API key
 
-Download and install Ollama from:
-
-https://ollama.com/download
-
-After installation, start Ollama.
-
-Pull the model used by ATLAS (replace with your preferred model if needed):
+Copy the example env file and put your key in it:
 
 ```bash
-ollama pull llama3.2
+copy .env.example .env
 ```
+
+Then edit `.env` and replace `your_groq_api_key_here` with your real key:
+
+```
+GROQ_API_KEY=gsk_...
+```
+
+Optional: change the model with `GROQ_MODEL` (default is `llama-3.1-8b-instant`).
 
 ---
 
@@ -141,9 +143,9 @@ Make sure Python is installed and added to your system PATH.
 
 ---
 
-### Ollama is not running
+### GROQ_API_KEY is missing
 
-Start the Ollama application before launching ATLAS.
+Create a `.env` file in the ATLAS folder (see `.env.example`) and set `GROQ_API_KEY`.
 
 ---
 
@@ -163,7 +165,7 @@ voice/
 # Technologies Used
 
 * Python
-* Ollama
+* Groq
 * Vosk
 * Piper
 * ChromaDB

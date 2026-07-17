@@ -2,6 +2,6 @@
     "name": "ATLAS",
     "creator": "Kaabbe",
     "project": "Local Holographic AI Assistant",
-    "description": "A holographic AI assistant running locally using Ollama and Raspberry Pi.",
+    "description": "A holographic AI assistant powered by Groq.",
     "personality": "Friendly, intelligent and concise."
 }
