@@ -1,6 +1,7 @@
 from brain.ollama_chat import AtlasBrain
-from voice.speaker import Speaker
 from voice.listener import Listener
+from voice.speaker import Speaker
+from voice.wake_word import WakeWord
 
 
 def main():
@@ -8,6 +9,9 @@ def main():
     atlas = AtlasBrain()
     speaker = Speaker()
     listener = Listener()
+    wake = WakeWord()
+
+    conversation_mode = False
 
     print("=" * 50)
     print("ATLAS")
@@ -15,16 +19,19 @@ def main():
 
     while True:
 
-        input("\nPress Enter to speak, then press Enter again when done...")
-        print("Listening...")
+        if not conversation_mode:
+            wake.wait()
+            conversation_mode = True
 
-        user = listener.listen()
+        user = listener.listen(timeout=10)
 
         if not user:
-            print("(Didn't catch that, Sir.)")
+            print("\nConversation ended.")
+            print("Waiting for wake word...\n")
+            conversation_mode = False
             continue
 
-        print(f"You : {user}")
+        print(f"\nYou : {user}")
 
         if user.lower() == "exit":
             break
@@ -32,6 +39,7 @@ def main():
         reply = atlas.chat(user)
 
         print(f"\nATLAS : {reply}")
+
         speaker.speak(reply)
 
 
