@@ -1,6 +1,6 @@
-from ollama import Client
+from groq import Groq
 
-from config import MODEL, HOST
+from config import MODEL, GROQ_API_KEY
 from brain.identify import Identity
 from memory.vector_store import VectorStore
 
@@ -13,7 +13,7 @@ class AtlasBrain:
 
     def __init__(self):
 
-        self.client = Client(host=HOST)
+        self.client = Groq(api_key=GROQ_API_KEY)
 
         self.identity = Identity()
 
@@ -72,7 +72,7 @@ class AtlasBrain:
             return f"I was created by {creator_name}, Sir."
 
         if "what model powers you" in message:
-            return "I am powered by Qwen 2.5 running locally through Ollama, Sir."
+            return f"I am powered by {MODEL} running on Groq, Sir."
 
         # ==========================
         # Retrieve Relevant Memories
@@ -116,12 +116,12 @@ class AtlasBrain:
         # Send to Ollama
         # ==========================
 
-        response = self.client.chat(
+        response = self.client.chat.completions.create(
             model=MODEL,
             messages=request_messages
         )
 
-        assistant = response["message"]["content"].strip()
+        assistant = response.choices[0].message.content.strip()
 
         # ==========================
         # Keep "Sir" at the end

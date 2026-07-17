@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Ollama (local LLM brain)
-MODEL = "qwen2.5:1.5b"
+# Groq (chat brain)
+MODEL = "whisper-large-v3-turbo"
 HOST = "http://localhost:11434"
 
 # Piper TTS
