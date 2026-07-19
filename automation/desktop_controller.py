@@ -28,16 +28,21 @@ class DesktopController:
     }
     
     # Common applications (Windows)
+    # Maps app aliases to (exe_name, possible_paths)
     COMMON_APPS = {
+        'google': ['chrome.exe', 'Google\\Chrome\\Application\\chrome.exe'],
+        'google chrome': ['chrome.exe', 'Google\\Chrome\\Application\\chrome.exe'],
         'chrome': ['chrome.exe', 'Google\\Chrome\\Application\\chrome.exe'],
         'firefox': ['firefox.exe', 'Mozilla Firefox\\firefox.exe'],
         'edge': ['msedge.exe', 'Microsoft\\Edge\\Application\\msedge.exe'],
         'notepad': ['notepad.exe'],
         'calculator': ['calc.exe'],
+        'calc': ['calc.exe'],
         'explorer': ['explorer.exe'],
         'vscode': ['code.exe', 'Microsoft VS Code\\Code.exe'],
         'vs code': ['code.exe', 'Microsoft VS Code\\Code.exe'],
         'visual studio code': ['code.exe', 'Microsoft VS Code\\Code.exe'],
+        'code': ['code.exe', 'Microsoft VS Code\\Code.exe'],
         'spotify': ['Spotify.exe', 'Spotify\\Spotify.exe'],
         'discord': ['Discord.exe', 'Discord\\Discord.exe'],
         'teams': ['Teams.exe', 'Microsoft\\Teams\\Teams.exe'],
@@ -45,6 +50,17 @@ class DesktopController:
         'word': ['WINWORD.EXE', 'Microsoft Office\\root\\Office16\\WINWORD.EXE'],
         'excel': ['EXCEL.EXE', 'Microsoft Office\\root\\Office16\\EXCEL.EXE'],
         'powerpoint': ['POWERPNT.EXE', 'Microsoft Office\\root\\Office16\\POWERPNT.EXE'],
+    }
+    
+    # Apps that should open as websites instead
+    WEBSITE_APPS = {
+        'youtube': 'https://www.youtube.com',
+        'gmail': 'https://mail.google.com',
+        'github': 'https://github.com',
+        'reddit': 'https://www.reddit.com',
+        'twitter': 'https://twitter.com',
+        'facebook': 'https://www.facebook.com',
+        'instagram': 'https://www.instagram.com',
     }
     
     def __init__(self):
@@ -62,7 +78,12 @@ class DesktopController:
             Tuple of (success, message)
         """
         try:
-            app_name_lower = app_name.lower()
+            app_name_lower = app_name.lower().strip()
+            
+            # Check if it's a website app (like "open youtube")
+            if app_name_lower in self.WEBSITE_APPS:
+                url = self.WEBSITE_APPS[app_name_lower]
+                return self.open_website(url)
             
             # Check common apps first
             if app_name_lower in self.COMMON_APPS:
@@ -70,30 +91,70 @@ class DesktopController:
                 
                 for exe in executables:
                     try:
-                        # Try direct executable name
-                        if '\\' not in exe:
-                            subprocess.Popen([exe], shell=True)
-                            self.logger.info(f"Opened application: {app_name}")
+                        # Extract just the exe name (first element or split from path)
+                        exe_name = exe.split('\\')[-1] if '\\' in exe else exe
+                        
+                        # Try using shutil.which for system apps
+                        import shutil
+                        exe_path = shutil.which(exe_name)
+                        if exe_path:
+                            subprocess.Popen([exe_path], shell=False)
+                            self.logger.info(f"Opened application: {app_name} using {exe_path}")
                             return True, f"Successfully opened {app_name}, Sir."
-                        else:
-                            # Try in Program Files
+                        
+                        # Try in Program Files directories
+                        if '\\' in exe:
                             program_files = [
                                 os.environ.get('ProgramFiles', 'C:\\Program Files'),
                                 os.environ.get('ProgramFiles(x86)', 'C:\\Program Files (x86)'),
+                                os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Programs'),
                             ]
                             
                             for base_path in program_files:
+                                if not base_path:
+                                    continue
                                 full_path = os.path.join(base_path, exe)
                                 if os.path.exists(full_path):
-                                    subprocess.Popen([full_path])
+                                    subprocess.Popen([full_path], shell=False)
                                     self.logger.info(f"Opened application: {app_name} from {full_path}")
                                     return True, f"Successfully opened {app_name}, Sir."
                     except Exception as e:
+                        self.logger.debug(f"Failed attempt with {exe}: {e}")
                         continue
+                
+                # If we got here, none of the paths worked
+                self.logger.error(f"Could not find {app_name} in any known location")
+                return False, f"I couldn't find {app_name}, Sir. Please ensure it's installed."
             
-            # Try opening as a direct command
+            # Try using shutil.which for unknown apps
+            import shutil
+            exe_path = shutil.which(app_name)
+            if exe_path:
+                subprocess.Popen([exe_path], shell=False)
+                self.logger.info(f"Opened application: {app_name}")
+                return True, f"Successfully opened {app_name}, Sir."
+            
+            # Try with .exe extension
+            if not app_name.endswith('.exe'):
+                exe_path = shutil.which(f"{app_name}.exe")
+                if exe_path:
+                    subprocess.Popen([exe_path], shell=False)
+                    self.logger.info(f"Opened application: {app_name}")
+                    return True, f"Successfully opened {app_name}, Sir."
+            
+            # Last resort: try as direct command (for system commands like notepad, calc)
             try:
-                subprocess.Popen([app_name], shell=True)
+                result = subprocess.run(
+                    [app_name],
+                    shell=False,
+                    capture_output=True,
+                    timeout=1
+                )
+                # If it didn't error immediately, assume it worked
+                self.logger.info(f"Opened application: {app_name}")
+                return True, f"Successfully opened {app_name}, Sir."
+            except subprocess.TimeoutExpired:
+                # Process is running, that's good
                 self.logger.info(f"Opened application: {app_name}")
                 return True, f"Successfully opened {app_name}, Sir."
             except Exception as e:

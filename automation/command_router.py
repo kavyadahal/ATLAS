@@ -155,16 +155,28 @@ class CommandRouter:
     def _is_open_website_command(self, message: str) -> bool:
         """Check if message is an open website command."""
         patterns = [
-            r'\bopen\s+(?:website\s+)?(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
-            r'\bgo\s+to\s+(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
-            r'\bvisit\s+(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
+            # Full URLs with protocol
+            r'\bopen\s+https?://',
+            r'\bgo\s+to\s+https?://',
+            r'\bvisit\s+https?://',
+            # Domains with common extensions
+            r'\bopen\s+(?:website\s+)?(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)\b',
+            r'\bgo\s+to\s+(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)\b',
+            r'\bvisit\s+(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)\b',
         ]
         return any(re.search(pattern, message) for pattern in patterns)
     
     def _handle_open_website(self, message: str) -> str:
         """Handle opening a website."""
-        # Extract URL
-        url_match = re.search(r'(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)(?:/[\w\.-]*)*', message)
+        # Extract URL - try with protocol first
+        url_match = re.search(r'https?://[\w\.-]+(?:\.\w+)*(?:/[\w\.-]*)*', message)
+        if url_match:
+            url = url_match.group(0)
+            success, msg = self.desktop.open_website(url)
+            return msg
+        
+        # Try without protocol
+        url_match = re.search(r'(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)(?:/[\w\.-]*)*', message)
         if url_match:
             url = url_match.group(0)
             success, msg = self.desktop.open_website(url)

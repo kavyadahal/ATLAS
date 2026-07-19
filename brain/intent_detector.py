@@ -110,14 +110,19 @@ class IntentDetector:
             'priority': 8
         },
         
-        # Website/URL
+        # Website/URL (higher priority to catch domains before apps)
         'open_website': {
             'patterns': [
-                r'open\s+(?:website\s+)?(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
-                r'go\s+to\s+(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
-                r'visit\s+(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
+                # Full URLs with protocol
+                r'open\s+(https?://[\w\.-]+(?:\.\w+)*(?:/[\w\.-]*)*)',
+                r'go\s+to\s+(https?://[\w\.-]+(?:\.\w+)*(?:/[\w\.-]*)*)',
+                r'visit\s+(https?://[\w\.-]+(?:\.\w+)*(?:/[\w\.-]*)*)',
+                # Domains with extension
+                r'open\s+(?:website\s+)?((?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)(?:/[\w\.-]*)*)',
+                r'go\s+to\s+((?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)(?:/[\w\.-]*)*)',
+                r'visit\s+((?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)(?:/[\w\.-]*)*)',
             ],
-            'priority': 9
+            'priority': 11
         },
         
         # Folder Operations
@@ -284,12 +289,17 @@ class IntentDetector:
                 params['app_name'] = match.group(1).strip()
         
         elif intent == 'open_website':
-            url_match = re.search(
-                r'(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov)',
-                original_text.lower()
-            )
-            if url_match:
-                params['url'] = url_match.group(0)
+            # Try to get URL from match groups first
+            if match.lastindex and match.lastindex >= 1:
+                params['url'] = match.group(1).strip()
+            else:
+                # Fallback to regex search
+                url_match = re.search(
+                    r'(?:https?://)?(?:www\.)?[\w\.-]+\.(?:com|org|net|io|edu|gov|co|uk|in|de|fr|jp|cn|au|br|ru|it|es|nl|ca|mx|kr|se|no|fi|dk|pl|be|ch|at)(?:/[\w\.-]*)*',
+                    original_text.lower()
+                )
+                if url_match:
+                    params['url'] = url_match.group(0)
         
         elif intent == 'open_folder':
             if match.lastindex and match.lastindex >= 1:
