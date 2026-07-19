@@ -1,6 +1,6 @@
 from groq import Groq
 
-from config import MODEL, GROQ_API_KEY
+from config import GROQ_MODEL, GROQ_API_KEY
 from brain.identify import Identity
 from memory.vector_store import VectorStore
 
@@ -54,7 +54,7 @@ class AtlasBrain:
         creator_name = self.identity.data["creator"]
 
         if "who are you" in message:
-            return f"I am {assistant_name}, a local holographic AI assistant created by {creator_name}, Sir."
+            return f"I am {assistant_name}, a cloud-powered AI assistant created by {creator_name}, Sir."
 
         if "what is your name" in message:
             return f"My name is {assistant_name}, Sir."
@@ -72,7 +72,7 @@ class AtlasBrain:
             return f"I was created by {creator_name}, Sir."
 
         if "what model powers you" in message:
-            return f"I am powered by {MODEL} running on Groq, Sir."
+            return f"I am powered by {GROQ_MODEL} running on Groq, Sir."
 
         # ==========================
         # Retrieve Relevant Memories
@@ -113,11 +113,11 @@ class AtlasBrain:
             request_messages = self.messages
 
         # ==========================
-        # Send to Ollama
+        # Send to Groq
         # ==========================
 
         response = self.client.chat.completions.create(
-            model=MODEL,
+            model=GROQ_MODEL,
             messages=request_messages
         )
 
@@ -128,7 +128,7 @@ class AtlasBrain:
         # ==========================
 
         if not assistant.endswith(("Sir.", "Sir!", "Sir?")):
-            assistant += " Sir."
+            assistant += ", Sir."
 
         # ==========================
         # Save Conversation

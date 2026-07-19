@@ -18,14 +18,18 @@ class WakeWord:
             frame_length=1280
         )
 
-    def wait(self):
+    def wait(self, silent=False):
         """
         Blocks until the wake word is detected. Can be called repeatedly
         across multiple conversation cycles (the recorder is only started
         and stopped here, never deleted, so it stays reusable).
+        
+        Args:
+            silent: If True, suppress print statements for background operation
         """
 
-        print("Waiting for wake word...")
+        if not silent:
+            print("Waiting for wake word...")
 
         self.recorder.start()
 
@@ -38,7 +42,8 @@ class WakeWord:
                 score = prediction.get("hey_jarvis", 0)
 
                 if score > 0.5:
-                    print("\nWake word detected!\n")
+                    if not silent:
+                        print("\nWake word detected!\n")
                     break
 
         finally:

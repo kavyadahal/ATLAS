@@ -1,6 +1,19 @@
-# ATLAS
+# ATLAS v2 – AI Operating System
 
-ATLAS is a local AI voice assistant built with Python. It uses **Ollama** for AI responses, **Vosk** for speech recognition, and **Piper** for text-to-speech.
+ATLAS is a cloud-powered AI voice assistant built with Python that includes **desktop control** and **smart file management** capabilities. It uses **Groq** for AI responses and embeddings via **Gemini**, **Vosk** for speech recognition, and **Piper** for text-to-speech.
+
+## 🆕 What's New in v2
+
+ATLAS has evolved from a simple voice assistant into an AI Operating System with:
+
+- **Desktop Control**: Open/close applications, manage windows, browse websites
+- **Smart File System**: Search, organize, manage files with natural language
+- **Safety First**: Confirmation required for dangerous operations
+- **Comprehensive Logging**: All operations tracked with timestamps
+- **Seamless Integration**: Works alongside existing conversational AI
+- **Cloud-Powered**: No local LLM required - runs entirely on cloud APIs
+
+👉 **[Read the Full Automation Guide](AUTOMATION_GUIDE.md)**
 
 ## Requirements
 
@@ -8,8 +21,9 @@ Before getting started, make sure you have:
 
 * Python 3.10 or later installed
 * Git installed
-* Ollama installed and running
-* An internet connection (to download required packages and models)
+* A **Groq API key** (get one free at [console.groq.com](https://console.groq.com))
+* A **Gemini API key** (get one free at [ai.google.dev](https://ai.google.dev))
+* An internet connection
 
 ---
 
@@ -42,7 +56,25 @@ Wait until the installation finishes.
 
 ---
 
-## Step 3: Download the AI Voice Models
+## Step 3: Configure API Keys
+
+Create a `.env` file in the project root with your API keys:
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+**Where to get API keys:**
+- **Groq API Key**: Sign up at [console.groq.com](https://console.groq.com) (free tier available)
+- **Gemini API Key**: Get one at [ai.google.dev](https://ai.google.dev) (free tier available)
+
+**Optional**: Set `GROQ_MODEL` to use a different model. Default is `llama-3.3-70b-versatile`.
+
+---
+
+## Step 4: Download the AI Voice Models
 
 Double-click:
 
@@ -62,22 +94,6 @@ voice/
 ├── en_US-ryan-high.onnx
 ├── en_US-ryan-high.onnx.json
 └── vosk-model-small-en-us-0.15/
-```
-
----
-
-## Step 4: Install Ollama
-
-Download and install Ollama from:
-
-https://ollama.com/download
-
-After installation, start Ollama.
-
-Pull the model used by ATLAS (replace with your preferred model if needed):
-
-```bash
-ollama pull llama3.2
 ```
 
 ---
@@ -119,15 +135,17 @@ again.
 ```
 ATLAS/
 │
-├── brain/
-├── data/
-├── memory/
-├── voice/
+├── automation/          # Desktop & file control modules
+├── brain/              # AI chat logic
+├── data/               # Identity and profile data
+├── memory/             # Vector store & embeddings
+├── voice/              # Speech recognition & TTS
 ├── install.bat
 ├── download_models.bat
 ├── run.bat
 ├── requirements.txt
 ├── README.md
+├── AUTOMATION_GUIDE.md
 └── app.py
 ```
 
@@ -141,9 +159,9 @@ Make sure Python is installed and added to your system PATH.
 
 ---
 
-### Ollama is not running
+### API Key errors
 
-Start the Ollama application before launching ATLAS.
+Make sure you have created a `.env` file with valid `GROQ_API_KEY` and `GEMINI_API_KEY`.
 
 ---
 
@@ -163,10 +181,21 @@ voice/
 # Technologies Used
 
 * Python
-* Ollama
-* Vosk
-* Piper
-* ChromaDB
+* Groq (LLM API)
+* Google Gemini (Embeddings)
+* Vosk (Speech-to-Text)
+* Piper (Text-to-Speech)
+* ChromaDB (Vector Database)
+
+---
+
+# Architecture
+
+- **Chat Generation**: Groq API with `llama-3.3-70b-versatile` (configurable)
+- **Embeddings**: Google Gemini `text-embedding-004`
+- **Memory**: ChromaDB for long-term memory with RAG
+- **Voice**: Local Vosk STT + Piper TTS
+- **Automation**: Native Windows desktop and file system control
 
 ---
 

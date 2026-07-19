@@ -23,6 +23,7 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
 
 # ChromaDB database (generated at runtime)
 data/chroma_db/
