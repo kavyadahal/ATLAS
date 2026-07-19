@@ -10,6 +10,7 @@ import psutil
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 import logging
+from rapidfuzz import fuzz, process
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,48 @@ class DesktopController:
     def __init__(self):
         """Initialize the DesktopController."""
         self.logger = logging.getLogger(__name__)
+        # Fuzzy matching threshold (0-100, higher = stricter matching)
+        self.fuzzy_match_threshold = 75
+    
+    def _fuzzy_match_app_name(self, app_name: str) -> Optional[str]:
+        """
+        Find the best matching app name using fuzzy matching.
+        
+        This helps handle voice recognition errors like:
+        - "vscod" -> "vscode"
+        - "goggle" -> "google"
+        - "chrom" -> "chrome"
+        
+        Args:
+            app_name: The app name to match (potentially misspelled)
+            
+        Returns:
+            The best matching app name from COMMON_APPS or WEBSITE_APPS, or None
+        """
+        app_name_lower = app_name.lower().strip()
+        
+        # First check for exact match
+        if app_name_lower in self.COMMON_APPS or app_name_lower in self.WEBSITE_APPS:
+            return app_name_lower
+        
+        # Combine all known app aliases
+        all_app_names = list(self.COMMON_APPS.keys()) + list(self.WEBSITE_APPS.keys())
+        
+        # Use rapidfuzz to find the best match
+        # extractOne returns (match_string, score, index) or None
+        result = process.extractOne(
+            app_name_lower,
+            all_app_names,
+            scorer=fuzz.WRatio,  # Weighted Ratio - best for general matching
+            score_cutoff=self.fuzzy_match_threshold
+        )
+        
+        if result:
+            matched_name, score, _ = result
+            self.logger.info(f"Fuzzy matched '{app_name}' to '{matched_name}' (score: {score})")
+            return matched_name
+        
+        return None
     
     def open_application(self, app_name: str) -> Tuple[bool, str]:
         """
@@ -79,6 +122,11 @@ class DesktopController:
         """
         try:
             app_name_lower = app_name.lower().strip()
+            
+            # Try fuzzy matching first to handle misspellings
+            matched_name = self._fuzzy_match_app_name(app_name_lower)
+            if matched_name:
+                app_name_lower = matched_name
             
             # Check if it's a website app (like "open youtube")
             if app_name_lower in self.WEBSITE_APPS:
@@ -177,6 +225,12 @@ class DesktopController:
         """
         try:
             app_name_lower = app_name.lower()
+            
+            # Try fuzzy matching first to handle misspellings
+            matched_name = self._fuzzy_match_app_name(app_name_lower)
+            if matched_name:
+                app_name_lower = matched_name
+            
             closed_count = 0
             
             # Get the executable name
