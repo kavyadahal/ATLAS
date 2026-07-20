@@ -12,7 +12,21 @@ class IntentDetector:
     
     # Command patterns with priorities (higher = checked first)
     COMMAND_PATTERNS = {
-        # File Operations
+        # File Operations - PART 2 & 3: Smart file creation with content
+        'create_file_with_content': {
+            'patterns': [
+                # PART 3: Semantic patterns for file creation with content
+                r'create\s+(?:a\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+).+(?:containing|with|that\s+(?:has|says|includes))',
+                r'make\s+(?:a\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+).+(?:containing|with|that\s+(?:has|says|includes))',
+                r'write\s+(?:a\s+)?(?:python\s+|code\s+)?(?:file|script)\s+(?:in\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                r'generate\s+(?:a\s+)?(?:python\s+|code\s+)?(?:file|script)\s+(?:in\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                r'create\s+([a-zA-Z0-9_\-]+\.(?:py|js|html|css|json|md|yaml|yml))\s+(?:for|that|to)',
+                # With explicit content instructions
+                r'create\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)\s+(?:write|containing)',
+                r'make\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)\s+(?:write|containing)',
+            ],
+            'priority': 11
+        },
         'create_file': {
             'patterns': [
                 # Just filename (no keywords) - highest priority - must have extension
@@ -237,7 +251,27 @@ class IntentDetector:
         """
         params = {'original_text': original_text}
         
-        if intent == 'create_file':
+        if intent == 'create_file_with_content':
+            # Extract filename from pattern
+            if match.lastindex and match.lastindex >= 1 and match.group(1):
+                filename = match.group(1).strip()
+                # Ensure extension exists
+                if '.' not in filename:
+                    filename += '.txt'
+                params['filename'] = filename
+                params['has_content_intent'] = True
+                
+                # Try to extract location if specified
+                if match.lastindex >= 2 and match.group(2):
+                    params['location'] = match.group(2).strip()
+                else:
+                    params['location'] = 'desktop'
+            else:
+                params['filename'] = 'newfile.txt'
+                params['location'] = 'desktop'
+                params['has_content_intent'] = True
+        
+        elif intent == 'create_file':
             # Check if filename was captured
             if match.lastindex and match.lastindex >= 1 and match.group(1):
                 filename = match.group(1).strip()

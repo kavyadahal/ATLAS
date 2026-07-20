@@ -22,7 +22,6 @@ Before getting started, make sure you have:
 * Python 3.10 or later installed
 * Git installed
 * A **Groq API key** (get one free at [console.groq.com](https://console.groq.com))
-* A **Gemini API key** (get one free at [ai.google.dev](https://ai.google.dev))
 * An internet connection
 
 ---
@@ -62,13 +61,11 @@ Create a `.env` file in the project root with your API keys:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
-GEMINI_API_KEY=your_gemini_api_key_here
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-**Where to get API keys:**
+**Where to get API key:**
 - **Groq API Key**: Sign up at [console.groq.com](https://console.groq.com) (free tier available)
-- **Gemini API Key**: Get one at [ai.google.dev](https://ai.google.dev) (free tier available)
 
 **Optional**: Set `GROQ_MODEL` to use a different model. Default is `llama-3.3-70b-versatile`.
 
@@ -161,7 +158,7 @@ Make sure Python is installed and added to your system PATH.
 
 ### API Key errors
 
-Make sure you have created a `.env` file with valid `GROQ_API_KEY` and `GEMINI_API_KEY`.
+Make sure you have created a `.env` file with valid `GROQ_API_KEY`.
 
 ---
 
@@ -182,7 +179,7 @@ voice/
 
 * Python
 * Groq (LLM API)
-* Google Gemini (Embeddings)
+* Local ONNX Embeddings (via ChromaDB)
 * Vosk (Speech-to-Text)
 * Piper (Text-to-Speech)
 * ChromaDB (Vector Database)
@@ -192,7 +189,7 @@ voice/
 # Architecture
 
 - **Chat Generation**: Groq API with `llama-3.3-70b-versatile` (configurable)
-- **Embeddings**: Google Gemini `text-embedding-004`
+- **Embeddings**: Local ONNX embeddings (all-MiniLM-L6-v2) - no API key required
 - **Memory**: ChromaDB for long-term memory with RAG
 - **Voice**: Local Vosk STT + Piper TTS
 - **Automation**: Native Windows desktop and file system control

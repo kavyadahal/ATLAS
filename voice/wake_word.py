@@ -1,7 +1,10 @@
 import numpy as np
+import time
 
 from openwakeword.model import Model
 from pvrecorder import PvRecorder
+
+from voice.speaking_state import get_speaking_state
 
 
 class WakeWord:
@@ -27,6 +30,13 @@ class WakeWord:
         Args:
             silent: If True, suppress print statements for background operation
         """
+        speaking_state = get_speaking_state()
+        
+        # CRITICAL: Wait until TTS finishes before listening for wake word
+        if speaking_state.is_speaking():
+            if not silent:
+                print("[Wake Word] Paused (assistant speaking)")
+            speaking_state.wait_until_can_listen()
 
         if not silent:
             print("Waiting for wake word...")
@@ -35,6 +45,18 @@ class WakeWord:
 
         try:
             while True:
+                # Check if assistant started speaking while we're listening
+                if speaking_state.is_speaking():
+                    # Pause wake word detection
+                    self.recorder.stop()
+                    if not silent:
+                        print("[Wake Word] Paused (assistant speaking)")
+                    speaking_state.wait_until_can_listen()
+                    # Resume after speaking finishes
+                    if not silent:
+                        print("Waiting for wake word...")
+                    self.recorder.start()
+                
                 pcm = self.recorder.read()
                 audio = np.array(pcm, dtype=np.int16)
 
