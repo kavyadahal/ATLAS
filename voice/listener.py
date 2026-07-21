@@ -39,10 +39,15 @@ class Listener:
         recognition_id = f"REC_{self.recognition_counter}_{int(time.time() * 1000)}"
         
         # CRITICAL: Wait until TTS finishes before accepting microphone input
+        # Use event-based synchronization instead of polling
         if speaking_state.is_speaking():
             if not silent:
                 print(f"[{recognition_id}] Paused (assistant speaking)")
-            speaking_state.wait_until_can_listen()
+            # Block until the event is set (TTS complete + cooldown elapsed)
+            if not speaking_state.wait_until_can_listen(timeout=30):
+                if not silent:
+                    print(f"[{recognition_id}] ❌ Timeout waiting for TTS to complete")
+                return None, None
         
         if not silent:
             print(f"[{recognition_id}] Listening...")
@@ -63,17 +68,45 @@ class Listener:
         last_voice_time = time.time()
         speech_started = False
 
-        # CRITICAL: Add 100ms delay before starting stream to ensure microphone buffer is clear
-        time.sleep(0.1)
-
-        with sd.InputStream(
+        # Open the input stream FIRST to initialize the audio device
+        stream = sd.InputStream(
             samplerate=self.sample_rate,
             channels=1,
             dtype="int16",
             blocksize=4000,
             callback=callback
-        ):
+        )
+        
+        with stream:
+            # CRITICAL: Flush the microphone buffer by draining initial audio
+            # This removes any residual audio from before the stream started
+            if not silent:
+                print(f"[{recognition_id}] Flushing buffer...")
+            
+            flush_start = time.time()
+            flush_duration = 0.2  # 200ms buffer flush
+            
+            while time.time() - flush_start < flush_duration:
+                try:
+                    # Drain and discard audio from the queue
+                    audio_queue.get(timeout=0.05)
+                except queue.Empty:
+                    break
+            
+            if not silent:
+                print(f"[{recognition_id}] Buffer flushed, ready for speech")
+            
+            # Reset timing after buffer flush
+            start_time = time.time()
+            last_voice_time = time.time()
+            # Main recording loop
             while True:
+                # Check if assistant started speaking (abort recording)
+                if speaking_state.is_speaking():
+                    if not silent:
+                        print(f"[{recognition_id}] ❌ Aborted (assistant started speaking)")
+                    return None, None
+                
                 try:
                     block = audio_queue.get(timeout=0.1)
                 except queue.Empty:
@@ -103,28 +136,28 @@ class Listener:
                         print(f"[{recognition_id}] ❌ Timeout - No speech detected")
                     return None, None
 
-        if not speech_started:
+            if not speech_started:
+                if not silent:
+                    print(f"[{recognition_id}] ❌ No speech detected")
+                return None, None
+
+            # CRITICAL: Ensure the queue is fully drained
+            while not audio_queue.empty():
+                try:
+                    audio_queue.get_nowait()
+                except queue.Empty:
+                    break
+
             if not silent:
-                print(f"[{recognition_id}] ❌ No speech detected")
-            return None, None
+                print(f"[{recognition_id}] 💾 Saving audio ({len(frames)} frames)...")
 
-        # CRITICAL: Ensure the queue is fully drained
-        while not audio_queue.empty():
-            try:
-                audio_queue.get_nowait()
-            except queue.Empty:
-                break
+            audio = np.concatenate(frames, axis=0)
+            sf.write(unique_filename, audio, self.sample_rate)
 
-        if not silent:
-            print(f"[{recognition_id}] 💾 Saving audio ({len(frames)} frames)...")
+            if not silent:
+                print(f"[{recognition_id}] ✓ Saved to {unique_filename}")
 
-        audio = np.concatenate(frames, axis=0)
-        sf.write(unique_filename, audio, self.sample_rate)
-
-        if not silent:
-            print(f"[{recognition_id}] ✓ Saved to {unique_filename}")
-
-        return unique_filename, recognition_id
+            return unique_filename, recognition_id
     
     def cleanup_old_files(self, pattern="input_*.wav"):
         """Clean up old audio files to prevent disk bloat."""

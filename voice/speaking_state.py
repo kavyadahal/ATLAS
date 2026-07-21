@@ -22,6 +22,11 @@ class SpeakingState:
         self._speaking_finished_time = 0
         self.resume_delay = 0.8  # 800ms delay after speech ends (PART 1: Post-TTS cooldown)
         
+        # Event-based synchronization: Listener threads wait on this event
+        # Set when safe to listen, cleared when speaking starts
+        self._can_listen_event = threading.Event()
+        self._can_listen_event.set()  # Initially can listen
+        
         # PART 1: Duplicate transcript suppression
         self._recent_transcripts = deque(maxlen=5)  # Store last 5 transcripts
         self._transcript_times = deque(maxlen=5)
@@ -38,15 +43,29 @@ class SpeakingState:
         with self._lock:
             self._is_speaking = True
             self._last_spoken_text = self._normalize(text)
+            # Clear the event to block any listener threads
+            self._can_listen_event.clear()
             print("[TTS] Speaking...")
     
     def stop_speaking(self):
-        """Mark that TTS has finished. Call AFTER audio playback completes."""
+        """
+        Mark that TTS has finished. Call AFTER audio playback completes.
+        This method will block for the resume_delay period, then signal listeners.
+        """
         with self._lock:
             self._is_speaking = False
             self._speaking_finished_time = time.time()
             print("[TTS] Finished")
-            print(f"[Listener] Waiting {int(self.resume_delay * 1000)}ms...")
+            print(f"[Listener] Cooldown {int(self.resume_delay * 1000)}ms...")
+        
+        # CRITICAL: Wait for cooldown BEFORE setting the event
+        # This ensures no listener can proceed until the delay has elapsed
+        time.sleep(self.resume_delay)
+        
+        with self._lock:
+            # Now it's safe - signal all waiting listener threads
+            self._can_listen_event.set()
+            print("[Listener] Ready to resume")
     
     def is_speaking(self) -> bool:
         """Check if assistant is currently speaking."""
@@ -72,21 +91,26 @@ class SpeakingState:
             
             return True
     
-    def wait_until_can_listen(self, check_interval: float = 0.05):
+    def wait_until_can_listen(self, timeout: float = None):
         """
-        Block until it's safe to listen.
+        Block until it's safe to listen using event-based synchronization.
         Used by listener to wait for TTS to finish.
-        """
-        while not self.can_listen():
-            time.sleep(check_interval)
         
-        # Extra logging when resuming
-        if self._speaking_finished_time > 0:
-            with self._lock:
-                # Reset the timer after we've waited
-                self._speaking_finished_time = 0
-            print("[Listener] Buffer Cleared")
+        Args:
+            timeout: Maximum time to wait in seconds (None = wait forever)
+        
+        Returns:
+            True if can listen, False if timeout occurred
+        """
+        # Wait on the event instead of polling
+        result = self._can_listen_event.wait(timeout=timeout)
+        
+        if result:
             print("[Listener] Resumed")
+        else:
+            print("[Listener] Wait timeout!")
+        
+        return result
     
     def is_echo(self, recognized_text: str, similarity_threshold: float = 0.75) -> bool:
         """

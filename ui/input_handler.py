@@ -62,6 +62,14 @@ class InputThreadManager:
                 if self.conversation_state.check_timeout():
                     self.console.print_message("\n\n[Conversation timeout - Waiting for wake word...]")
                     self.console.print_prompt()
+                    # BUG FIX #1: After timeout, we MUST return to wake word detection
+                    # by continuing to the top of the loop, which will check is_active()
+                    # and properly wait for wake word. Don't proceed to listener.listen().
+                    continue
+                
+                # Only listen if still in active conversation mode
+                if not self.conversation_state.is_active():
+                    # Safety check: if conversation became inactive, restart wake word detection
                     continue
                 
                 # Listen for voice input (longer timeout, silent mode)
@@ -76,12 +84,19 @@ class InputThreadManager:
                 # Transcribe the audio with recognition ID
                 text = stt.transcribe(audio_file, recognition_id)
                 
-                # Validate transcription - ignore empty or very short noise
+                # BUG FIX #3: Enhanced validation - ignore empty, short, or background noise
                 if not text or len(text.strip()) < 3:
                     print(f"[{recognition_id}] ❌ Transcript too short or empty - ignored")
                     continue
                 
-                # Echo protection - check if this is assistant's own speech
+                # BUG FIX #3: Filter common background noise words that shouldn't trigger commands
+                text_lower = text.strip().lower()
+                noise_patterns = ['you', 'thank you', 'thanks', 'okay', 'ok', 'hmm', 'uh', 'um', 'ah']
+                if text_lower in noise_patterns or len(text.strip().split()) <= 1 and text_lower in noise_patterns:
+                    print(f"[{recognition_id}] ❌ Background noise filtered - ignored: '{text}'")
+                    continue
+                
+                # BUG FIX #3: Echo protection - check if this is assistant's own speech
                 speaking_state = get_speaking_state()
                 if speaking_state.is_echo(text):
                     print(f"[{recognition_id}] ❌ Echo detected - ignored")

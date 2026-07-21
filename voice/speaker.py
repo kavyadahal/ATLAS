@@ -26,8 +26,10 @@ class Speaker:
         speaking_state = get_speaking_state()
         
         # Mark speaking start BEFORE generating audio
+        # This will clear the can_listen event, blocking all listener threads
         speaking_state.start_speaking(text)
         
+        play_obj = None
         try:
             buffer = io.BytesIO()
 
@@ -35,7 +37,6 @@ class Speaker:
                 self.voice.synthesize_wav(text, wav_file, syn_config=self.syn_config)
 
             buffer.seek(0)
-
 
             with wave.open(buffer, "rb") as wav_reader:
                 channels = wav_reader.getnchannels()
@@ -48,8 +49,20 @@ class Speaker:
 
             padded_audio = silence_bytes + audio_frames
 
+            # Start playback
             play_obj = sa.play_buffer(padded_audio, channels, sample_width, frame_rate)
+            
+            # CRITICAL: Wait for playback to completely finish
+            # This ensures the audio output device has finished writing all samples
             play_obj.wait_done()
+            
+            # Extra safety: Ensure the playback object is fully released
+            if play_obj is not None:
+                del play_obj
+                play_obj = None
+            
         finally:
             # Mark speaking end AFTER playback completes (even if error occurs)
+            # This will sleep for the cooldown period, then set the can_listen event
+            # allowing blocked listener threads to proceed
             speaking_state.stop_speaking()

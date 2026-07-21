@@ -15,12 +15,23 @@ class IntentDetector:
         # File Operations - PART 2 & 3: Smart file creation with content
         'create_file_with_content': {
             'patterns': [
-                # PART 3: Semantic patterns for file creation with content
+                # PART 3: Flexible patterns for writing code/content to files
+                # Match "write [content/description] in/to filename.ext" - for cases like "write hello world in test.py"
+                r'write\s+.+?\s+(?:in|to)\s+([a-zA-Z0-9_\-]+\.(?:py|js|html|css|json|md|yaml|yml|txt))\b',
+                # Match "write [anything] in/to filename.ext" (catches "write X in file.py")
+                r'write\s+(?:a\s+)?(?:some\s+)?(?:simple\s+)?(?:python\s+|javascript\s+|js\s+|html\s+|css\s+)?(?:code|script|function|program)?\s+(?:in|to)\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                r'write\s+(?:a\s+)?(?:python\s+|code\s+)?(?:file|script)\s+(?:in\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                # Match "generate [anything] in/to filename.ext"
+                r'generate\s+(?:a\s+)?(?:some\s+)?(?:simple\s+)?(?:python\s+|javascript\s+|js\s+|html\s+|css\s+)?(?:code|script|function|program)?\s+(?:in|to|for)\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                r'generate\s+[a-zA-Z0-9_\-\s]+\s+(?:in|to|for)\s+([a-zA-Z0-9_\-]+\.(?:py|js|html|css|json|md|yaml|yml|txt))',
+                r'generate\s+(?:a\s+)?(?:python\s+|code\s+)?(?:file|script)\s+(?:in\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                # Match "add [anything] to filename.ext"
+                r'add\s+(?:a\s+)?(?:some\s+)?(?:simple\s+)?(?:python\s+|javascript\s+|js\s+)?(?:code|function|script)?\s+to\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
+                # Match "create filename.ext with/containing [content]"
                 r'create\s+(?:a\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+).+(?:containing|with|that\s+(?:has|says|includes))',
                 r'make\s+(?:a\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+).+(?:containing|with|that\s+(?:has|says|includes))',
-                r'write\s+(?:a\s+)?(?:python\s+|code\s+)?(?:file|script)\s+(?:in\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
-                r'generate\s+(?:a\s+)?(?:python\s+|code\s+)?(?:file|script)\s+(?:in\s+)?([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)',
-                r'create\s+([a-zA-Z0-9_\-]+\.(?:py|js|html|css|json|md|yaml|yml))\s+(?:for|that|to)',
+                # Match code file creation with purpose
+                r'create\s+([a-zA-Z0-9_\-]+\.(?:py|js|html|css|json|md|yaml|yml))\s+(?:for|that|to|which)',
                 # With explicit content instructions
                 r'create\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)\s+(?:write|containing)',
                 r'make\s+([a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+)\s+(?:write|containing)',
@@ -187,8 +198,8 @@ class IntentDetector:
         r'\btell\s+me\s+about\b',
         r'\bcan\s+you\s+(?:help|assist|tell)\b',
         r'\b(?:thanks|thank\s+you)\b',
-        r'\bhello\b',
-        r'\bhi\b',
+        r'^\s*hello\b',  # Only match "hello" at the start (greeting context)
+        r'^\s*hi\b',     # Only match "hi" at the start (greeting context)
         r'\bgoodbye\b',
     ]
     
@@ -209,10 +220,25 @@ class IntentDetector:
         """
         text_lower = text.lower().strip()
         
-        # Check if it's clearly a conversation
+        # Check if it's clearly a conversation (before stripping prefixes)
         for indicator in self.CONVERSATION_INDICATORS:
             if re.search(indicator, text_lower):
                 return ('chat', None)
+        
+        # Strip common conversational prefixes to extract the core command
+        # This allows "Can you create file.txt" to match "create file.txt"
+        conversational_prefixes = [
+            r'^(?:can|could|would|will)\s+you\s+(?:please\s+)?',
+            r'^please\s+',
+            r'^(?:i\s+want\s+you\s+to|i\s+need\s+you\s+to|i\s+would\s+like\s+you\s+to)\s+',
+            r'^(?:i\s+want\s+to|i\s+need\s+to|i\s+would\s+like\s+to)\s+',
+            r'^atlas[,\s]+',
+            r'^hey[,\s]+',
+        ]
+        
+        normalized_text = text_lower
+        for prefix_pattern in conversational_prefixes:
+            normalized_text = re.sub(prefix_pattern, '', normalized_text)
         
         # Check command patterns by priority
         sorted_commands = sorted(
@@ -223,7 +249,8 @@ class IntentDetector:
         
         for intent_name, intent_data in sorted_commands:
             for pattern in intent_data['patterns']:
-                match = re.search(pattern, text_lower)
+                # Try matching against normalized text (with prefixes stripped)
+                match = re.search(pattern, normalized_text)
                 if match:
                     # Extract parameters from match groups
                     params = self._extract_parameters(intent_name, match, text)

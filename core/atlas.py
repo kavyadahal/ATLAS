@@ -35,7 +35,9 @@ class Atlas:
         
         # Voice subsystem
         self.speaker = Speaker()
-        self.listener = Listener(silence_threshold=500, silence_timeout=2.0)
+        # BUG FIX #3: Increased silence_threshold from 500 to 800 to reduce sensitivity
+        # to background noise and prevent false triggers
+        self.listener = Listener(silence_threshold=800, silence_timeout=2.0)
         self.stt = SpeechToText()
         self.wake = WakeWord()
         
