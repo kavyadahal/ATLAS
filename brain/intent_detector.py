@@ -115,6 +115,27 @@ class IntentDetector:
             ],
             'priority': 9
         },
+        'explain_file': {
+            'patterns': [
+                r'explain\s+(?:file\s+)?([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'describe\s+(?:file\s+)?([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'what\s+(?:is|does)\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'open\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)\s+and\s+explain',
+                r'analyze\s+(?:file\s+)?([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+            ],
+            'priority': 10
+        },
+        'modify_code': {
+            'patterns': [
+                r'add\s+(?:a\s+)?(?:function|method|class|code)\s+to\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'append\s+(?:code\s+)?to\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'replace\s+(?:the\s+)?(?:\w+)\s+function\s+in\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'update\s+(?:the\s+)?(?:\w+)\s+function\s+in\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'modify\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+                r'insert\s+code\s+(?:in|into)\s+([a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+)',
+            ],
+            'priority': 10
+        },
         
         # Application Control (Lower priority - only matches non-file names)
         'open_app': {
@@ -338,12 +359,17 @@ class IntentDetector:
                 else:
                     params['location'] = 'desktop'
         
-        elif intent in ['delete_file', 'search_files', 'open_file', 'read_file', 'edit_file']:
+        elif intent in ['delete_file', 'search_files', 'open_file', 'read_file', 'edit_file', 'explain_file']:
             if match.lastindex and match.lastindex >= 1:
                 filename = match.group(1).strip()
                 params['filename'] = filename
                 if intent == 'delete_file':
                     params['query'] = filename  # For backward compatibility
+        
+        elif intent == 'modify_code':
+            if match.lastindex and match.lastindex >= 1:
+                filename = match.group(1).strip()
+                params['filename'] = filename
         
         elif intent in ['open_app', 'close_app']:
             if match.lastindex and match.lastindex >= 1:

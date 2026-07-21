@@ -105,97 +105,65 @@ run.bat
 
 ATLAS will start listening for your voice.
 
----
 
-# Updating the Project
+## Capabilities Added
 
-Whenever you download a newer version:
+### 1. **Explain Files**
+```
+User: "Explain app.py"
+ATLAS: [Reads file, analyzes structure, provides AI explanation]
 
-1. Pull the latest changes.
+User: "Open listener.py and explain it"
+ATLAS: [Reads listener.py, explains architecture and functionality]
 
-```bash
-git pull
+User: "What does config.py do?"
+ATLAS: [Analyzes and explains config.py]
 ```
 
-2. If new packages were added, run:
+### 2. **Read and Understand Files**
+- Reads any text/code file up to 1MB
+- Analyzes structure (functions, classes, imports)
+- Provides intelligent explanations via Groq AI
+- Handles Python, JavaScript, HTML, CSS, JSON, etc.
 
+### 3. **Generate Code**
 ```
-install.bat
-```
+User: "Write a simple hello world program in test.py"
+ATLAS: [Generates code, writes to test.py, confirms]
 
-again.
-
----
-
-# Project Structure
-
-```
-ATLAS/
-│
-├── automation/          # Desktop & file control modules
-├── brain/              # AI chat logic
-├── data/               # Identity and profile data
-├── memory/             # Vector store & embeddings
-├── voice/              # Speech recognition & TTS
-├── install.bat
-├── download_models.bat
-├── run.bat
-├── requirements.txt
-├── README.md
-├── AUTOMATION_GUIDE.md
-└── app.py
+User: "Write a calculator in calc.py"
+ATLAS: [Generates full calculator code via AI]
 ```
 
----
-
-# Troubleshooting
-
-### Python is not recognized
-
-Make sure Python is installed and added to your system PATH.
-
----
-
-### API Key errors
-
-Make sure you have created a `.env` file with valid `GROQ_API_KEY`.
-
----
-
-### Voice models not found
-
-Make sure the following files exist:
-
+### 4. **Append Code**
 ```
-voice/
-├── en_US-ryan-high.onnx
-├── en_US-ryan-high.onnx.json
-└── vosk-model-small-en-us-0.15/
+User: "Add a function to utils.py that calculates factorial"
+ATLAS: [Generates factorial function, appends to utils.py]
+
+User: "Add error handling to logger.py"
+ATLAS: [Generates error handling code, appends]
+```
+
+### 5. **Replace Functions**
+```
+User: "Replace the login() function in auth.py with a better version"
+ATLAS: [Finds login(), generates improved version, replaces it]
+
+User: "Update the validate() function in validator.py"
+ATLAS: [Locates function, generates replacement, updates file]
+```
+
+### 6. **Insert Code**
+```
+User: "Insert logging code in processor.py"
+ATLAS: [Generates logging code, inserts at appropriate location]
+```
+
+### 7. **Overwrite Files**
+```
+User: "Completely rewrite test.py as a unit test suite"
+ATLAS: [Generates new content, overwrites entire file]
 ```
 
 ---
 
-# Technologies Used
-
-* Python
-* Groq (LLM API)
-* Local ONNX Embeddings (via ChromaDB)
-* Vosk (Speech-to-Text)
-* Piper (Text-to-Speech)
-* ChromaDB (Vector Database)
-
----
-
-# Architecture
-
-- **Chat Generation**: Groq API with `llama-3.3-70b-versatile` (configurable)
-- **Embeddings**: Local ONNX embeddings (all-MiniLM-L6-v2) - no API key required
-- **Memory**: ChromaDB for long-term memory with RAG
-- **Voice**: Local Vosk STT + Piper TTS
-- **Automation**: Native Windows desktop and file system control
-
----
-
-# License
-
-This project is intended for learning and personal use.

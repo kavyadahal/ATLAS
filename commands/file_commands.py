@@ -18,6 +18,10 @@ def register_file_commands(registry, file_manager, file_writer):
         file_writer: FileWriter instance
     """
     
+    # Initialize file agent for AI-powered file operations
+    from brain.file_agent import FileAgent
+    file_agent = FileAgent()
+    
     @registry.register('create_file_with_content')
     def create_file_with_content(params: Dict[str, Any]) -> Tuple[bool, str]:
         """Handle smart file creation with AI-generated content."""
@@ -201,3 +205,24 @@ def register_file_commands(registry, file_manager, file_writer):
                 return True, f"Opening {filename} in default editor, Sir."
         except Exception as e:
             return False, f"Error opening file for editing: {str(e)}, Sir."
+    
+    @registry.register('explain_file')
+    def explain_file(params: Dict[str, Any]) -> Tuple[bool, str]:
+        """Handle explaining a file using AI."""
+        filename = params.get('filename', '')
+        
+        if not filename:
+            return False, "Please specify a file to explain, Sir."
+        
+        return file_agent.explain_file(filename)
+    
+    @registry.register('modify_code')
+    def modify_code(params: Dict[str, Any]) -> Tuple[bool, str]:
+        """Handle modifying code in a file using AI."""
+        filename = params.get('filename', '')
+        user_request = params.get('original_text', '')
+        
+        if not filename:
+            return False, "Please specify a file to modify, Sir."
+        
+        return file_agent.modify_code(filename, user_request)

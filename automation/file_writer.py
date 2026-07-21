@@ -203,6 +203,22 @@ class FileWriter:
         """
         result = {'has_explicit_content': False, 'content': ''}
         
+        # Keywords that indicate code/program generation request (not literal content)
+        code_generation_keywords = [
+            'calculator', 'program', 'script', 'function', 'class', 'api',
+            'web scraper', 'bot', 'server', 'client', 'app', 'application',
+            'algorithm', 'code', 'module', 'package', 'tool', 'utility',
+            'game', 'parser', 'converter', 'generator', 'handler', 'manager'
+        ]
+        
+        # Check if this is a code generation request
+        request_lower = user_request.lower()
+        is_code_request = any(keyword in request_lower for keyword in code_generation_keywords)
+        
+        # For code files, if it looks like a code generation request, don't treat as explicit content
+        if file_ext in ['.py', '.js', '.html', '.css', '.java', '.cpp', '.c', '.go', '.rs'] and is_code_request:
+            return result
+        
         # Look for explicit content patterns
         patterns = [
             r'write[:\s]+(.+)',
@@ -223,6 +239,60 @@ class FileWriter:
         
         return result
     
+    def _clean_user_request(self, user_request: str, filename: str) -> str:
+        """
+        Clean user request by removing filename references and action verbs.
+        
+        This prevents the LLM from receiving confusing prompts like:
+        "Generate code for: write a calculator in calc.py"
+        
+        Instead it becomes:
+        "Generate code for: a calculator"
+        
+        Args:
+            user_request: Original user request
+            filename: The target filename
+            
+        Returns:
+            Cleaned request string suitable for code generation
+        """
+        cleaned = user_request.lower()
+        
+        # Remove filename references (with and without extensions)
+        filename_base = os.path.splitext(filename)[0]
+        patterns_to_remove = [
+            rf'\b{re.escape(filename)}\b',  # Full filename with extension
+            rf'\b{re.escape(filename_base)}\b',  # Filename without extension
+            r'\bin\s+[a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+',  # "in filename.ext"
+            r'\bto\s+[a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+',  # "to filename.ext"
+            r'\bfor\s+[a-zA-Z0-9_\-]+\.[a-zA-Z0-9]+',  # "for filename.ext"
+        ]
+        
+        for pattern in patterns_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+        
+        # Remove leading action verbs
+        action_verbs = [
+            r'^write\s+',
+            r'^create\s+',
+            r'^make\s+',
+            r'^generate\s+',
+            r'^add\s+',
+        ]
+        
+        for verb_pattern in action_verbs:
+            cleaned = re.sub(verb_pattern, '', cleaned, flags=re.IGNORECASE)
+        
+        # Clean up extra whitespace and articles
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        cleaned = re.sub(r'^(?:a|an|the)\s+', '', cleaned, flags=re.IGNORECASE)
+        
+        # If cleaning removed everything, return a generic description
+        if not cleaned or len(cleaned) < 3:
+            return f"a {os.path.splitext(filename)[1][1:]} script"
+        
+        return cleaned
+    
     def _generate_python_content(self, filename: str, user_request: str) -> str:
         """Generate Python file content using AI."""
         # Check for specific patterns
@@ -231,8 +301,11 @@ class FileWriter:
         elif 'calculator' in user_request.lower():
             return self._get_calculator_template()
         
+        # Clean the user request - remove filename references
+        clean_request = self._clean_user_request(user_request, filename)
+        
         # Use AI to generate
-        prompt = f"Generate a complete, working Python script for: {user_request}. Only return the Python code, no explanations."
+        prompt = f"Generate a complete, working Python script for: {clean_request}. Only return the Python code, no explanations."
         
         try:
             brain = self._get_brain()
@@ -264,8 +337,11 @@ class FileWriter:
             project_name = os.path.splitext(filename)[0].upper()
             return f"# {project_name}\n\n## Description\n\nProject description here.\n\n## Usage\n\nUsage instructions here.\n"
         
+        # Clean the user request - remove filename references
+        clean_request = self._clean_user_request(user_request, filename)
+        
         # Use AI
-        prompt = f"Generate markdown content for: {user_request}. Return only the markdown, no explanations."
+        prompt = f"Generate markdown content for: {clean_request}. Return only the markdown, no explanations."
         
         try:
             brain = self._get_brain()

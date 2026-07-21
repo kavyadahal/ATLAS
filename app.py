@@ -16,7 +16,6 @@ from core.atlas import Atlas
 
 
 def main():
-    """Entry point for ATLAS."""
     atlas = Atlas()
     atlas.run()
 

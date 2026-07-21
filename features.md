@@ -5,7 +5,23 @@ ATLAS v2 is an AI Operating System - a cloud-powered voice assistant with deskto
 
 ---
 
-## 🎯 Core Features
+## 🎯 Core Features:
+
+- ✅ Create files
+- ✅ Create folders
+- ✅ Delete files (with confirmation)
+- ✅ Search files
+- ✅ Open files
+- ✅ Read files
+- ✅ Edit files
+- ✅ Run Python files
+- ✅ Open applications
+- ✅ Close applications
+- ✅ Open websites
+- ✅ Organize downloads
+- ✅ Chat conversations
+- ✅ Voice commands
+- ✅ Wake word detection
 
 ### 1. Voice Interface
 - **Wake Word Activation**: Activate ATLAS by saying "Hey Jarvis"
