@@ -6,6 +6,7 @@ Implements system-level commands.
 from typing import Dict, Any, Tuple
 import os
 import subprocess
+from tools.system_tools import SystemTimer
 
 
 def register_system_commands(registry, desktop_controller, file_manager):
@@ -17,6 +18,9 @@ def register_system_commands(registry, desktop_controller, file_manager):
         desktop_controller: DesktopController instance
         file_manager: FileManager instance
     """
+    
+    # Initialize system timer
+    system_timer = SystemTimer()
     
     @registry.register('list_apps')
     def list_apps(params: Dict[str, Any]) -> Tuple[bool, str]:
@@ -71,3 +75,54 @@ def register_system_commands(registry, desktop_controller, file_manager):
             return False, "The script took too long to execute, Sir."
         except Exception as e:
             return False, f"Error running Python file: {str(e)}, Sir."
+    
+    @registry.register('schedule_shutdown')
+    def schedule_shutdown(params: Dict[str, Any]) -> Tuple[bool, str] | Tuple[None, str, str]:
+        """Handle scheduling system shutdown."""
+        minutes = params.get('minutes', 30)
+        
+        # Check if this is a confirmation (already confirmed by user)
+        if params.get('confirmed', False):
+            # Execute the shutdown
+            return system_timer.schedule_shutdown(minutes)
+        else:
+            # Ask for confirmation
+            if minutes == 1:
+                time_str = "1 minute"
+            elif minutes < 60:
+                time_str = f"{minutes} minutes"
+            elif minutes == 60:
+                time_str = "1 hour"
+            else:
+                hours = minutes / 60
+                time_str = f"{hours:.1f} hours"
+            
+            return None, f"Your computer will shut down in {time_str}. Should I continue, Sir?", 'needs_confirmation'
+    
+    @registry.register('cancel_shutdown')
+    def cancel_shutdown(params: Dict[str, Any]) -> Tuple[bool, str]:
+        """Handle cancelling shutdown timer."""
+        return system_timer.cancel_shutdown()
+    
+    @registry.register('schedule_sleep')
+    def schedule_sleep(params: Dict[str, Any]) -> Tuple[bool, str] | Tuple[None, str, str]:
+        """Handle scheduling system sleep."""
+        minutes = params.get('minutes', 30)
+        
+        # Check if this is a confirmation (already confirmed by user)
+        if params.get('confirmed', False):
+            # Execute the sleep timer
+            return system_timer.schedule_sleep(minutes)
+        else:
+            # Ask for confirmation
+            if minutes == 1:
+                time_str = "1 minute"
+            elif minutes < 60:
+                time_str = f"{minutes} minutes"
+            elif minutes == 60:
+                time_str = "1 hour"
+            else:
+                hours = minutes / 60
+                time_str = f"{hours:.1f} hours"
+            
+            return None, f"Your computer will sleep in {time_str}. Should I continue, Sir?", 'needs_confirmation'

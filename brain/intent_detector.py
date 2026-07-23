@@ -206,6 +206,43 @@ class IntentDetector:
             ],
             'priority': 9
         },
+        
+        # System Timer Commands
+        'schedule_shutdown': {
+            'patterns': [
+                # Shutdown patterns with time
+                r'shutdown\s+(?:my\s+)?(?:computer|pc|system|laptop)\s+(?:in|after)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'(?:turn\s+off|power\s+off)\s+(?:my\s+)?(?:computer|pc|system|laptop)\s+(?:in|after)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'schedule\s+(?:a\s+)?shutdown\s+(?:in|after|for)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'shutdown\s+(?:in|after)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                # Alternative patterns
+                r'set\s+(?:a\s+)?shutdown\s+timer\s+(?:for|to)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'shutdown\s+timer\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+            ],
+            'priority': 8
+        },
+        'cancel_shutdown': {
+            'patterns': [
+                r'cancel\s+(?:the\s+)?shutdown(?:\s+timer)?',
+                r'abort\s+(?:the\s+)?shutdown(?:\s+timer)?',
+                r'stop\s+(?:the\s+)?shutdown(?:\s+timer)?',
+                r'(?:turn\s+off|disable)\s+(?:the\s+)?shutdown\s+timer',
+            ],
+            'priority': 8
+        },
+        'schedule_sleep': {
+            'patterns': [
+                # Sleep patterns with time
+                r'sleep\s+(?:my\s+)?(?:computer|pc|system|laptop)\s+(?:in|after)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'put\s+(?:my\s+)?(?:computer|pc|system|laptop)\s+to\s+sleep\s+(?:in|after)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'schedule\s+(?:a\s+)?sleep\s+(?:in|after|for)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'sleep\s+(?:in|after)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                # Alternative patterns
+                r'set\s+(?:a\s+)?sleep\s+timer\s+(?:for|to)\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+                r'sleep\s+timer\s+(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs)',
+            ],
+            'priority': 8
+        },
     }
     
     # Conversational indicators (if these are present, treat as chat)
@@ -395,6 +432,27 @@ class IntentDetector:
         elif intent == 'run_python':
             if match.lastindex and match.lastindex >= 1:
                 params['filename'] = match.group(1).strip()
+        
+        elif intent in ['schedule_shutdown', 'schedule_sleep']:
+            # Extract time value and unit
+            if match.lastindex and match.lastindex >= 2:
+                time_value = int(match.group(1).strip())
+                time_unit = match.group(2).strip().lower()
+                
+                # Convert to minutes
+                if time_unit in ['hour', 'hours', 'hr', 'hrs']:
+                    minutes = time_value * 60
+                else:  # minutes, min, mins
+                    minutes = time_value
+                
+                params['minutes'] = minutes
+            else:
+                # Default to 30 minutes if parsing fails
+                params['minutes'] = 30
+        
+        elif intent == 'cancel_shutdown':
+            # No parameters needed for cancellation
+            pass
         
         return params
     
