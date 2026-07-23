@@ -1,8 +1,7 @@
-# ATLAS v2 – AI Operating System
 
 ATLAS is a cloud-powered AI voice assistant built with Python that includes **desktop control** and **smart file management** capabilities. It uses **Groq** for AI responses and embeddings via **Gemini**, **Vosk** for speech recognition, and **Piper** for text-to-speech.
 
-## 🆕 What's New in v2
+
 
 ATLAS has evolved from a simple voice assistant into an AI Operating System with:
 
@@ -13,7 +12,7 @@ ATLAS has evolved from a simple voice assistant into an AI Operating System with
 - **Seamless Integration**: Works alongside existing conversational AI
 - **Cloud-Powered**: No local LLM required - runs entirely on cloud APIs
 
-👉 **[Read the Full Automation Guide](AUTOMATION_GUIDE.md)**
+
 
 ## Requirements
 
